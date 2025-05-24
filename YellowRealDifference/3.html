@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Creator Kit – Checklist</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+
+    .checklist {
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      gap: 10px;
+    }
+
+    .item input[type="checkbox"] {
+      transform: scale(1.3);
+    }
+
+    .item input[type="text"] {
+      flex-grow: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2a2a2a;
+      color: white;
+      transition: text-decoration 0.3s;
+    }
+
+    .item.checked input[type="text"] {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .remove {
+      background-color: #d93025;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      padding: 0 10px;
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .actions button {
+      flex: 1;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .add {
+      background-color: #34a853;
+      color: white;
+    }
+
+    .reset {
+      background-color: #d93025;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>YouTube Creator Kit – Checklist</h1>
+
+  <div class="checklist" id="checklist"></div>
+  <div class="actions">
+    <button class="add" onclick="addChecklistItem()">+</button>
+    <button class="reset" onclick="resetChecklist()">Réinitialiser</button>
+  </div>
+
+  <script>
+    const checklistContainer = document.getElementById("checklist");
+    let itemCount = parseInt(localStorage.getItem("checklist_count")) || 1;
+
+    function createItem(index) {
+      const itemId = `item${index}`;
+      const isChecked = localStorage.getItem(`${itemId}_checked`) === "true";
+      const savedText = localStorage.getItem(`${itemId}_text`) || "";
+
+      const div = document.createElement("div");
+      div.className = "item";
+      div.id = itemId;
+      if (isChecked) div.classList.add("checked");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = isChecked;
+      checkbox.addEventListener("change", () => {
+        localStorage.setItem(`${itemId}_checked`, checkbox.checked);
+        div.classList.toggle("checked", checkbox.checked);
+      });
+
+      const textInput = document.createElement("input");
+      textInput.type = "text";
+      textInput.value = savedText;
+      textInput.placeholder = "Écrire la tâche à faire...";
+      textInput.addEventListener("input", () => {
+        localStorage.setItem(`${itemId}_text`, textInput.value);
+      });
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "remove";
+      removeBtn.textContent = "−";
+      removeBtn.onclick = () => removeChecklistItem(div, itemId);
+
+      div.appendChild(checkbox);
+      div.appendChild(textInput);
+      div.appendChild(removeBtn);
+      checklistContainer.appendChild(div);
+    }
+
+    function loadChecklist() {
+      for (let i = 1; i <= itemCount; i++) {
+        if (localStorage.getItem(`item${i}_text`) !== null) {
+          createItem(i);
+        }
+      }
+    }
+
+    function addChecklistItem() {
+      itemCount++;
+      localStorage.setItem("checklist_count", itemCount);
+      createItem(itemCount);
+    }
+
+    function removeChecklistItem(element, id) {
+      checklistContainer.removeChild(element);
+      localStorage.removeItem(`${id}_checked`);
+      localStorage.removeItem(`${id}_text`);
+    }
+
+    function resetChecklist() {
+      for (let i = 1; i <= itemCount; i++) {
+        localStorage.removeItem(`item${i}_checked`);
+        localStorage.removeItem(`item${i}_text`);
+      }
+      localStorage.setItem("checklist_count", 1);
+      location.reload();
+    }
+
+    loadChecklist();
+  </script>
+</body>
+</html>
+

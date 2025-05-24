@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Visualiser de miniature YouTube (Creator Kit)</title>
+  <style>
+    body {
+      background-color: #121212;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: white;
+    }
+    .header {
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2em;
+      margin: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+    .video {
+      background-color: #1e1e1e;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 0 5px rgba(0,0,0,0.4);
+    }
+    .video img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    .info {
+      padding: 10px;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .channel {
+      font-size: 14px;
+      color: #ccc;
+    }
+    .custom-form {
+      max-width: 600px;
+      margin: 0 auto 40px;
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .custom-form h2 {
+      margin-top: 0;
+    }
+    .custom-form input[type="text"],
+    .custom-form input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #2a2a2a;
+      color: white;
+    }
+    .custom-form button {
+      width: 100%;
+      padding: 12px;
+      background-color: #34a853;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .char-count {
+      text-align: right;
+      font-size: 12px;
+      color: #aaa;
+      margin-top: -8px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Visualiser de miniature YouTube</h1>
+  </div>
+
+  <div class="grid" id="videoGrid"></div>
+
+  <div class="custom-form">
+    <h2>Ajouter votre propre vidéo</h2>
+    <input type="text" id="customTitle" placeholder="Titre de la vidéo" maxlength="70" oninput="updateCharCount()">
+    <div class="char-count" id="charCount">0 / 70 caractères</div>
+    <input type="text" id="customChannel" placeholder="Nom de la chaîne">
+    <input type="file" id="customThumbnail" accept="image/*">
+    <button onclick="addCustomVideo()">Ajouter la vidéo</button>
+  </div>
+
+  <script>
+    const videos = [];
+
+    const thumbnails = [
+      { title: "Bats Neymar Gagne 500 000 $", channel: "MrBeast", thumbnail: "thumbnails/batsneymargagne500000jpeg.jpeg" },
+      { title: "Tu Risquerais De Te Noyer Pour 500 000 $", channel: "MrBeast", thumbnail: "thumbnails/turisqueraisdetenoyerpour500000jpeg.jpeg" },
+      { title: "Harry Potter (Joueur du Grenier)", channel: "Joueur du Grenier", thumbnail: "https://img.youtube.com/vi/Ae5qpn_p6Fg/maxresdefault.jpg" },
+      { title: "LE GRAND JD - Fantôme capté", channel: "LE GRAND JD", thumbnail: "https://img.youtube.com/vi/icxSP5jb5z0/maxresdefault.jpg" },
+      { title: "Je Paierai TOUT Ce Que Vous Mettez Dans Le Cercle", channel: "MrBeast", thumbnail: "https://img.youtube.com/vi/yXWw0_UfSFg/maxresdefault.jpg" },
+    ];
+
+    function getRandomViews() {
+      const views = Math.floor(Math.random() * (20000000 - 100000 + 1)) + 100000;
+      return views.toLocaleString("fr-FR") + " vues";
+    }
+
+    function getRandomTime() {
+      const times = ["il y a 1 jour", "il y a 2 semaines", "il y a 3 mois", "il y a 1 an", "il y a 5 jours"];
+      return times[Math.floor(Math.random() * times.length)];
+    }
+
+    for (let i = 0; i < 29; i++) {
+      const t = thumbnails[i % thumbnails.length];
+      videos.push({
+        title: t.title,
+        channel: t.channel,
+        views: getRandomViews(),
+        time: getRandomTime(),
+        thumbnail: t.thumbnail
+      });
+    }
+
+    let customVideo = null;
+    let customInserted = false;
+
+    function updateCharCount() {
+      const input = document.getElementById("customTitle");
+      const count = input.value.length;
+      document.getElementById("charCount").textContent = `${count} / 70 caractères`;
+    }
+
+    function renderVideos() {
+      const grid = document.getElementById("videoGrid");
+      grid.innerHTML = "";
+      const all = [...videos];
+
+      if (customInserted && customVideo) {
+        all.splice(0, 0, customVideo);
+      }
+
+      all.forEach(video => {
+        const el = document.createElement("div");
+        el.className = "video";
+        const title = video.title.length > 70 ? video.title.slice(0, 67) + '...' : video.title;
+        el.innerHTML = `
+          <img src="${video.thumbnail}" alt="${title}">
+          <div class="info">
+            <div class="title">${title}</div>
+            <div class="channel">${video.channel} • ${video.views} • ${video.time}</div>
+          </div>
+        `;
+        grid.appendChild(el);
+      });
+    }
+
+    function addCustomVideo() {
+      const title = document.getElementById("customTitle").value;
+      const channel = document.getElementById("customChannel").value;
+      const fileInput = document.getElementById("customThumbnail").files[0];
+
+      if (title && channel && fileInput) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          customVideo = {
+            title: title,
+            channel: channel,
+            views: getRandomViews(),
+            time: "il y a quelques instants",
+            thumbnail: e.target.result
+          };
+          customInserted = true;
+          renderVideos();
+        };
+        reader.readAsDataURL(fileInput);
+      } else {
+        alert("Remplis tous les champs !");
+      }
+    }
+
+    renderVideos();
+    updateCharCount();
+  </script>
+<footer>
+    © 2025 Creator Kit. Créé avec ❤️ pour les créateurs de contenu.
+  </footer>
+

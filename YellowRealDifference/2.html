@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyse YouTube</title>
+  <style>
+    body {
+      background-color: #121212;
+      font-family: Arial, sans-serif;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .section {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #2a2a2a;
+      color: white;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bar-container {
+      background: #3a3a3a;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0;
+      background-color: red;
+      transition: width 0.3s ease;
+    }
+    .toggle {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background-color: #555;
+      border-radius: 15px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    .toggle::before {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+    .toggle.active {
+      background-color: #34a853;
+    }
+    .toggle.active::before {
+      transform: translateX(24px);
+    }
+    .btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background-color: #34a853;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .result-box {
+      margin-top: 20px;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .result-box.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Analyse de performance YouTube</h1>
+  <div class="section">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span>Vidéo</span>
+      <div class="toggle" id="videoType" onclick="toggleSwitch(this)"></div>
+      <span>Short</span>
+    </div>
+    <label>Type sélectionné : <span id="typeLabel">Vidéo classique</span></label>
+
+    <label>Durée :</label>
+    <input id="duration" type="text" placeholder="ex: 3:30">
+
+    <label>WatchTime :</label>
+    <input id="watchTime" type="text" placeholder="ex: 2:15">
+
+    <label>CTR :</label>
+    <div class="slider-container">
+      <input id="ctr" type="range" min="0" max="100" value="1" oninput="updateSlider(this.value)">
+      <span id="ctrValue">1%</span>
+    </div>
+    <div class="bar-container">
+      <div id="barFill" class="bar-fill"></div>
+    </div>
+
+    <button class="btn" onclick="analyser()">Analyser</button>
+    <div class="result-box" id="resultText">En attente des données.</div>
+  </div>
+
+  <script>
+    function toggleSwitch(el) {
+      el.classList.toggle('active');
+      const label = document.getElementById("typeLabel");
+      label.textContent = el.classList.contains('active') ? "Short" : "Vidéo classique";
+    }
+
+    function updateSlider(val) {
+      document.getElementById('ctrValue').textContent = val + "%";
+      const bar = document.getElementById('barFill');
+      bar.style.width = val + "%";
+      if (val < 2) bar.style.backgroundColor = "red";
+      else if (val < 6) bar.style.backgroundColor = "orange";
+      else bar.style.backgroundColor = "green";
+    }
+
+    function analyser() {
+      const duration = document.getElementById("duration").value;
+      const watchTime = document.getElementById("watchTime").value;
+      const ctr = parseFloat(document.getElementById("ctr").value);
+      const isShort = document.getElementById("videoType").classList.contains("active");
+      const result = document.getElementById("resultText");
+
+      const parseTime = str => {
+        const parts = str.split(":".trim()).map(Number);
+        return parts.length === 2 ? parts[0] * 60 + parts[1] : 0;
+      };
+
+      const totalSeconds = parseTime(duration);
+      const watchSeconds = parseTime(watchTime);
+      const watchRate = totalSeconds > 0 ? (watchSeconds / totalSeconds) * 100 : 0;
+
+      let feedback = `🎞 Type : ${isShort ? 'Short' : 'Vidéo classique'}`;
+
+      if (isShort) {
+        if (ctr < 5) feedback += `\n🔴 CTR faible : manque d'accroche immédiate.`;
+        else if (ctr < 10) feedback += `\n🟠 CTR moyen : améliorez l'ouverture et le rythme.`;
+        else feedback += `\n🟢 Très bon CTR : votre Short engage.`;
+      } else {
+        if (ctr < 2) feedback += `\n🔴 CTR faible : miniature ou titre peu engageant.`;
+        else if (ctr < 6) feedback += `\n🟠 CTR moyen : pensez à tester d'autres visuels.`;
+        else feedback += `\n🟢 Bon CTR : continuez ainsi.`;
+      }
+
+      if (isShort) {
+        if (watchRate < 70) feedback += `\n🔴 Faible rétention : captez dès la première seconde.`;
+        else if (watchRate < 85) feedback += `\n🟠 Rétention moyenne : dynamisez davantage.`;
+        else feedback += `\n🟢 Très bonne rétention !`;
+        feedback += `\n📌 Astuce : les miniatures/titres comptent peu pour les Shorts.`;
+      } else {
+        if (watchRate < 40) feedback += `\n🔴 Faible rétention : le rythme ou le contenu pose problème.`;
+        else if (watchRate < 60) feedback += `\n🟠 Rétention moyenne : améliorable.`;
+        else feedback += `\n🟢 Bonne rétention.`;
+        feedback += `\n📌 Conseil : testez plusieurs miniatures dans YouTube Studio.`;
+      }
+
+      feedback += `\n\n⏱ Durée : ${duration}`;
+      feedback += `\n👁️ WatchTime : ${watchTime}`;
+
+      result.classList.remove("visible");
+      void result.offsetWidth; // restart animation
+      result.textContent = feedback;
+      result.classList.add("visible");
+    }
+  </script>
+<footer>
+    © 2025 Creator Kit. Créé avec ❤️ pour les créateurs de contenu.
+  </footer>
+
