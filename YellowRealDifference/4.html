@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> 📝 To Do List – Creator Kit</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
+
+    .month-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .month-nav button {
+      background-color: #2a2a2a;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    input, button {
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background-color: #2a2a2a;
+      color: white;
+    }
+
+    .controls button {
+      background-color: #34a853;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background-color: #2e8a3e;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      max-width: 700px;
+      width: 100%;
+    }
+
+    .day {
+      background-color: #1e1e1e;
+      padding: 10px;
+      min-height: 100px;
+      border-radius: 5px;
+      position: relative;
+      font-size: 14px;
+    }
+
+    .day .date {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .event {
+      font-size: 12px;
+      color: #fff;
+      border-radius: 3px;
+      padding: 4px 6px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background-color: rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .event .title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      flex: 1;
+      color: white;
+      max-width: 80px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .event button {
+      background-color: #f44336;
+      border: 1px solid #f44336;
+      border-radius: 50%;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .event button:hover {
+      background-color: #d32f2f;
+      transform: scale(1.1);
+    }
+
+    .weekday {
+      text-align: center;
+      font-weight: bold;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .side-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 100%;
+      background: #1e1e1e;
+      color: white;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+      padding: 20px;
+      transform: translateX(100%);
+      transition: transform 0.4s ease;
+      z-index: 1000;
+    }
+
+    .side-panel.active {
+      transform: translateX(0);
+    }
+
+    .side-panel h2 {
+      margin-top: 0;
+    }
+
+    .close-panel {
+      background: #f44336;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📝 To Do List </h1>
+
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">←</button>
+    <span id="monthYear"></span>
+    <button onclick="changeMonth(1)">→</button>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="videoTitle" placeholder="Tache à Faire">
+    <input type="date" id="videoDate">
+    <input type="time" id="videoTime">
+    <button onclick="addVideo()">Ajouter</button>
+  </div>
+
+  <div class="calendar" id="calendar"></div>
+
+  <div class="side-panel" id="infoPanel">
+    <h2>Détails</h2>
+    <p id="infoTitle"></p>
+    <p id="infoDate"></p>
+    <p id="infoTime"></p>
+    <button class="close-panel" onclick="closeDetails()">Fermer</button>
+  </div>
+
+  <script>
+    const calendar = document.getElementById("calendar");
+    const monthYear = document.getElementById("monthYear");
+    const infoPanel = document.getElementById("infoPanel");
+    const infoTitle = document.getElementById("infoTitle");
+    const infoDate = document.getElementById("infoDate");
+    const infoTime = document.getElementById("infoTime");
+
+    let videos = JSON.parse(localStorage.getItem("videoPlanner") || "[]");
+    let current = new Date();
+
+    function getRandomColor() {
+      const colors = ["#e91e63", "#3f51b5", "#ff9800", "#009688", "#9c27b0", "#2196f3", "#f44336", "#8bc34a"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function saveVideos() {
+      localStorage.setItem("videoPlanner", JSON.stringify(videos));
+    }
+
+    function addVideo() {
+      const title = document.getElementById("videoTitle").value.trim();
+      const date = document.getElementById("videoDate").value;
+      const time = document.getElementById("videoTime").value;
+      const color = getRandomColor();
+      if (title && date) {
+        videos.push({ title, date, time, color });
+        saveVideos();
+        renderCalendar();
+        document.getElementById("videoTitle").value = "";
+        document.getElementById("videoDate").value = "";
+        document.getElementById("videoTime").value = "";
+      }
+    }
+
+    function deleteVideo(index) {
+      videos.splice(index, 1);
+      saveVideos();
+      renderCalendar();
+    }
+
+    function changeMonth(offset) {
+      current.setMonth(current.getMonth() + offset);
+      renderCalendar();
+    }
+
+    function showDetails(video) {
+      infoTitle.textContent = `Titre : ${video.title}`;
+      infoDate.textContent = `Date : ${video.date}`;
+      infoTime.textContent = `Heure : ${video.time || 'Non précisée'}`;
+      infoPanel.classList.add("active");
+    }
+
+    function closeDetails() {
+      infoPanel.classList.remove("active");
+    }
+
+    function renderCalendar() {
+      calendar.innerHTML = "";
+
+      const year = current.getFullYear();
+      const month = current.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+
+      const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+      monthYear.textContent = `${monthNames[month]} ${year}`;
+
+      const dayLabels = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+      dayLabels.forEach(label => {
+        const div = document.createElement("div");
+        div.className = "weekday";
+        div.textContent = label;
+        calendar.appendChild(div);
+      });
+
+      for (let i = 0; i < startDay; i++) {
+        calendar.appendChild(document.createElement("div"));
+      }
+
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const cell = document.createElement("div");
+        cell.className = "day";
+
+        const label = document.createElement("div");
+        label.className = "date";
+        label.textContent = day;
+        cell.appendChild(label);
+
+        videos.forEach((v, i) => {
+          if (v.date === dateStr) {
+            const e = document.createElement("span");
+            e.className = "event";
+            e.style.backgroundColor = v.color || getRandomColor();
+
+            const span = document.createElement("span");
+            span.className = "title";
+            span.textContent = v.title.length > 8 ? v.title.substring(0, 8) + "..." : v.title;
+            span.onclick = () => showDetails(v);
+
+            const del = document.createElement("button");
+            del.textContent = "×";
+            del.title = "Supprimer cette tâche";
+            del.onclick = () => deleteVideo(i);
+
+            e.appendChild(span);
+            e.appendChild(del);
+            cell.appendChild(e);
+          }
+        });
+
+        calendar.appendChild(cell);
+      }
+    }
+
+    renderCalendar();
+  </script>
+<footer>
+    © 2025 Creator Kit. Créé avec ❤️ pour les créateurs de contenu.
+  </footer>
